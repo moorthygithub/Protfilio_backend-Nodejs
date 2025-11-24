@@ -7,12 +7,19 @@ exports.createProfolio = async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const query = `INSERT INTO profolios ("Firstname", "Lastname", "Email", "Phone", "Description") VALUES ($1, $2, $3, $4, $5)`;
+  const query = `
+    INSERT INTO profolios ("Firstname", "Lastname", "Email", "Phone", "Description")
+    VALUES ($1, $2, $3, $4, $5)
+  `;
   const values = [Firstname, Lastname, Email, Phone, Description];
 
   try {
     await pool.query(query, values);
 
+    // Send response immediately
+    res.status(200).json({ message: "✅ Data inserted successfully!" });
+
+    // Send email asynchronously
     const mailOptions = {
       from: `"Portfolio App" <${process.env.EMAIL_USER}>`,
       to: "moorthy.chandiran21@gmail.com",
@@ -27,9 +34,9 @@ exports.createProfolio = async (req, res) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-
-    res.status(200).json({ message: "✅ Data inserted successfully!" });
+    transporter.sendMail(mailOptions).catch((err) => {
+      console.error("❌ Email sending failed:", err.message);
+    });
   } catch (err) {
     console.error("❌ Error inserting data:", err);
     res.status(500).json({ error: "Server error" });
